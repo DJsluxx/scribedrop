@@ -1,0 +1,94 @@
+CORRESPONDING SOURCE FOR THE GPL COMPONENTS OF THIS ARCHIVE
+
+This archive contains libx264 and libx265, which are licensed under the GNU
+General Public License, version 2 or later. A copy of that licence is included
+as COPYING.GPLv2.txt.
+
+These binaries were not built by us. They arrived, already compiled, inside the
+PyAV wheel (av, version 18.1.0) published on PyPI, together with the FFmpeg
+shared libraries in _internal\av.libs\ that are dynamically linked against them.
+We redistribute them unmodified.
+
+The complete corresponding source for these components, and the exact build
+configuration used to produce them, are available at the same place you obtained
+this archive:
+
+    https://github.com/DJsluxx/scribedrop/releases/tag/v0.1.0
+
+Upstream sources:
+    x264   https://code.videolan.org/videolan/x264          (c) VideoLAN
+    x265   https://bitbucket.org/multicoreware/x265_git     (c) MulticoreWare, Inc.
+    FFmpeg https://ffmpeg.org/download.html
+
+The FFmpeg libraries in this archive report the following build configuration
+(obtained by calling avcodec_configuration() on the shipped avcodec DLL):
+
+  --disable-static --enable-shared --libdir=/c/cibw/vendor/lib
+  --prefix=/c/cibw/vendor --disable-programs --disable-doc --disable-libxml2
+  --disable-lzma --disable-libtheora --disable-libfreetype --disable-libfontconfig
+  --disable-libbluray --disable-libopenjpeg --enable-mediafoundation
+  --enable-version3 --disable-alsa --disable-gnutls --enable-libdav1d
+  --enable-libmp3lame --enable-libopencore-amrnb --enable-libopencore-amrwb
+  --enable-libopus --enable-libsvtav1 --enable-libvpx --enable-libwebp
+  --disable-libxcb --enable-zlib --enable-libx264 --enable-libx265
+  --enable-nvenc --enable-nvdec --enable-amf --enable-libvpl
+  --disable-encoder=avui,dca,mlp,opus,s302m,sonic,sonic_ls,truehd
+  --disable-decoder=sonic --disable-libjack --disable-indev=jack
+  --disable-filter=gfxcapture
+
+Note that this configuration enables libx264 and libx265 but does not pass
+--enable-gpl, and the libraries consequently report their own licence as
+"LGPL version 3 or later". Upstream FFmpeg's configure lists libx264 and libx265
+in EXTERNAL_LIBRARY_GPL_LIST and would normally refuse this combination. We
+believe the self-reported licence string is therefore incorrect, and we treat
+these libraries as GPL version 2 or later. If you are the rights holder and
+disagree with any part of this, please open an issue and we will act on it.
+
+If you would prefer to obtain ScribeDrop with no GPL component in the box at
+all, use the from-source installation described in the README. It installs the
+same packages into your own virtual environment; we redistribute nothing.
+
+
+-------------------------------------------------------------------------------
+APPENDIX - EXACTLY WHICH SOURCE, AND HOW WE KNOW
+-------------------------------------------------------------------------------
+
+The four files below are attached to the release linked above. They are not an
+approximation of the source: their SHA-256 sums are the sums recorded in the
+build manifest that produced these very binaries
+(PyAV-Org/pyav-ffmpeg, tag 8.1.2-1, scripts/pkg.py), and we re-downloaded each
+one from its upstream host and confirmed the sum before publishing it.
+
+  ffmpeg-8.1.2.tar.xz
+      https://ffmpeg.org/releases/ffmpeg-8.1.2.tar.xz
+      SHA-256 464beb5e7bf0c311e68b45ae2f04e9cc2af88851abb4082231742a74d97b524c
+      libavcodec major version 62 - matches avcodec-62-*.dll in this archive.
+
+  x264-b35605ace3ddf7c1a5d67a2eb553f034aef41d55.tar.bz2
+      https://code.videolan.org/videolan/x264/-/archive/b35605ace3ddf7c1a5d67a2eb553f034aef41d55/x264-b35605ace3ddf7c1a5d67a2eb553f034aef41d55.tar.bz2
+      SHA-256 6eeb82934e69fd51e043bd8c5b0d152839638d1ce7aa4eea65a3fedcf83ff224
+      X264_BUILD 165 - matches libx264-165-*.dll and the x264_encoder_open_165
+      symbol that avcodec imports from it.
+
+  x265_4.2.tar.gz
+      https://bitbucket.org/multicoreware/x265_git/downloads/x265_4.2.tar.gz
+      SHA-256 40b1ea0453e0309f0eba934e0ddf533f8f6295966679e8894e8f1c1c8d5e1210
+      X265_BUILD 216 - matches the x265_api_get_216 symbol that avcodec imports.
+      Its x265Version.txt records releasetag 4.2, releasetagdistance 1,
+      changeset e444744, which is the string "4.2+1-e444744" that the shipped
+      libx265 DLL reports as its own version.
+
+  pyav-ffmpeg-8.1.2-1-build-scripts.tar.gz
+      https://github.com/PyAV-Org/pyav-ffmpeg (tag 8.1.2-1)
+      The scripts used to control compilation and installation, which GPLv2 s3
+      counts as part of the complete corresponding source. It contains the
+      configure invocation reproduced above, and patches/ffmpeg.patch, which is
+      the modification that moves libx264 and libx265 out of FFmpeg's
+      EXTERNAL_LIBRARY_GPL_LIST and into EXTERNAL_LIBRARY_VERSION3_LIST. That
+      patch is why the shipped libraries mislabel themselves as LGPLv3. We did
+      not write it and we do not rely on it: we treat these libraries as
+      GPLv2-or-later regardless of what the binary says about itself.
+
+This is not a written offer under GPLv2 s3(b). It is source accompanying the
+binary under s3(a), served from the same page, with no time limit and nothing
+for you to ask us for.

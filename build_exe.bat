@@ -63,6 +63,19 @@ REM with the repo - a user who only ever downloads the .zip must still get them.
 copy /y "LICENSE" "dist\ScribeDrop\LICENSE.txt" >nul
 copy /y "THIRD-PARTY-NOTICES.md" "dist\ScribeDrop\THIRD-PARTY-NOTICES.md" >nul
 copy /y "README.md" "dist\ScribeDrop\README.md" >nul
+REM GPLv2 compliance: the bundle hard-links GPL x264/x265 via PyAV's avcodec, so
+REM the licence text and the pointer to corresponding source must travel with it.
+REM GPLv2 s1 requires the licence; s3(a) requires the source from the same place.
+copy /y "COPYING.GPLv2.txt" "dist\ScribeDrop\COPYING.GPLv2.txt" >nul
+copy /y "GPL-SOURCE-OFFER.txt" "dist\ScribeDrop\GPL-SOURCE-OFFER.txt" >nul
+if not exist "dist\ScribeDrop\COPYING.GPLv2.txt" (
+    echo ERROR: COPYING.GPLv2.txt missing from the bundle. Not packaging this build.
+    exit /b 1
+)
+if not exist "dist\ScribeDrop\GPL-SOURCE-OFFER.txt" (
+    echo ERROR: GPL-SOURCE-OFFER.txt missing from the bundle. Not packaging this build.
+    exit /b 1
+)
 
 echo.
 echo Bundle written to dist\ScribeDrop
