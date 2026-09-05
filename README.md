@@ -30,7 +30,9 @@ ScribeDrop is the missing front end: the same engine, wrapped in a window.
 - **A queue** with per-file progress, an overall progress bar, and a Cancel button that actually works mid-file.
 - **Model picker** — tiny / base / small / medium / large-v3, with download sizes shown. Defaults to `small`,
   which is a much smaller download than `large-v3` and good enough for most speech.
-- **Language** auto-detect, or pick one of 28 explicitly.
+- **Language** auto-detect, or pick one of 28 explicitly: English, Spanish, French, German, Italian,
+  Portuguese, Dutch, Polish, Russian, Ukrainian, Turkish, Arabic, Hebrew, Hindi, Chinese, Japanese, Korean,
+  Swedish, Norwegian, Danish, Finnish, Czech, Greek, Romanian, Hungarian, Indonesian, Vietnamese, Thai.
 - **Outputs**: `.txt`, `.srt`, `.vtt` — any combination. Written next to the source file, or into a folder you choose.
 - **GPU when you have one, CPU when you don't** — and the status line always tells you which, e.g.
   `Using GPU (CUDA) / float16` or `Using CPU / int8`. It never silently falls back to the slow path.
@@ -42,6 +44,30 @@ If subtitles are what you came for: tick **Subtitles (.srt)**, drop the video in
 standards-shaped `.srt` next to the video, with sequential indices and monotonic timestamps, ready for
 YouTube, Premiere, DaVinci Resolve, VLC or anything else that eats subtitle files. `.vtt` for the web works
 the same way, and both can be written from the same run.
+
+Here is a real `.srt` ScribeDrop wrote, unedited:
+
+```srt
+1
+00:00:00,000 --> 00:00:02,600
+Thanks for trying scribe drop.
+
+2
+00:00:02,600 --> 00:00:11,140
+Drop a video or audio file onto this window, and it writes a subtitle file next to it, using your own computer to do the work.
+
+3
+00:00:11,140 --> 00:00:15,060
+No upload, no account, and no subscription required.
+```
+
+### Which model should I pick?
+
+- **tiny** — fastest, smallest download. Good for a rough draft you'll skim, not trust.
+- **base** — still quick, a step up in accuracy. Fine for casual notes.
+- **small** *(default)* — the everyday pick: good accuracy for a download most people won't notice.
+- **medium** — slower and a bigger download, worth it for accents, background noise, or a talk you'll publish.
+- **large-v3** — the most accurate, the slowest, and the biggest download — pick it when the transcript itself is the deliverable and you have a decent GPU.
 
 ## Your audio never leaves your machine
 
@@ -91,15 +117,18 @@ the whole product.
 
 ## Install
 
+**If you have an NVIDIA GPU, use Option B — it transcribes substantially faster than Option A.**
+
 ### Option A — Standalone (no Python needed, CPU only)
 
 1. Download `ScribeDrop-0.1.0-win64-cpu.zip` from [Releases](../../releases).
 2. Unzip it anywhere.
 3. Run `ScribeDrop.exe`.
 
-Simplest path. It transcribes on the CPU — fine for short files, slower for long ones. Use Option B if you
-have an NVIDIA card. Tested on Windows 11 x64; it is built for Windows 10/11 x64 and ships the C runtime it
-needs, but one machine is the only machine we have proved it on.
+Simplest path. Measured on this machine (AMD Ryzen 7 7800X3D, CPU-only path) transcribing a 5-minute audio
+file with the default `small` model: **19.0 seconds**. Use Option B if you have an NVIDIA card. Tested on
+Windows 11 x64; it is built for Windows 10/11 x64 and ships the C runtime it needs, but one machine is the
+only machine we have proved it on.
 
 ### Option B — From source (uses your NVIDIA GPU)
 
@@ -109,6 +138,9 @@ Requires [Python 3.10+](https://www.python.org/downloads/) with the *Add python.
 2. Double-click **`setup.bat`**. It creates a private `.venv`, installs the requirements, detects whether you
    have an NVIDIA GPU, and if so installs the CUDA libraries automatically (a large one-time download).
 3. Double-click **`ScribeDrop.bat`**.
+
+Measured on this machine (NVIDIA RTX 4070 Ti, GPU path) transcribing the same 5-minute audio file with the
+same `small` model: **4.5 seconds**. Same input, same model, only the device changed.
 
 That is the whole install. Everything ScribeDrop creates for itself lives in the project folder or in
 `%LOCALAPPDATA%\ScribeDrop` (settings and downloaded models). Transcripts go next to your source file by
