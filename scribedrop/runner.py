@@ -59,31 +59,39 @@ class QueueRunner:
         self.events.put(Event(kind=kind, **kwargs))
 
     def _run(self) -> None:
-        succeeded = failed = 0
+        succeeded = failed = cancelled = 0
         transcriber = Transcriber(self._settings.resolved_models_dir(), self._settings.device)
         try:
             for index, source in enumerate(self._files):
                 if self._cancel.is_set():
                     self._emit("cancelled", index=index)
+                    cancelled += 1
                     break
                 outcome = self._run_one(transcriber, index, source)
-                succeeded += 1 if outcome else 0
-                failed += 0 if outcome else 1
+                succeeded += 1 if outcome == "done" else 0
+                failed += 1 if outcome == "error" else 0
+                cancelled += 1 if outcome == "cancelled" else 0
         finally:
             transcriber.release()
             self._emit(
                 "finished",
-                message=self._summary(succeeded, failed),
+                message=self._summary(succeeded, failed, cancelled),
             )
 
-    def _summary(self, succeeded: int, failed: int) -> str:
-        if self._cancel.is_set():
-            return f"Cancelled. {succeeded} finished, {failed} failed."
+    def _summary(self, succeeded: int, failed: int, cancelled: int = 0) -> str:
+        """One sentence for the status bar. A cancelled file is never a failure."""
+        parts = [f"{succeeded} transcribed"]
+        if cancelled:
+            parts.append(f"{cancelled} cancelled")
         if failed:
-            return f"Done: {succeeded} transcribed, {failed} failed."
-        return f"Done: {succeeded} transcribed."
+            parts.append(f"{failed} failed")
+        tail = ", ".join(parts)
+        if self._cancel.is_set():
+            return f"Cancelled. {tail}."
+        return f"Done: {tail}."
 
-    def _run_one(self, transcriber: Transcriber, index: int, source: Path) -> bool:
+    def _run_one(self, transcriber: Transcriber, index: int, source: Path) -> str:
+        """Returns the outcome for one file: 'done', 'error' or 'cancelled'."""
         self._emit("start", index=index, message=source.name)
 
         def progress(fraction: float, message: str) -> None:
@@ -99,25 +107,25 @@ class QueueRunner:
             )
         except TranscriptionCancelled:
             self._emit("cancelled", index=index, message="Cancelled")
-            return False
+            return "cancelled"
         except (MediaError, EngineError) as exc:
             self._emit("error", index=index, message=str(exc))
-            return False
+            return "error"
         except Exception as exc:  # noqa: BLE001 - a worker thread must never die silently
             self._emit("error", index=index, message=f"Unexpected error: {exc}")
-            return False
+            return "error"
         return self._write(index, source, segments)
 
-    def _write(self, index: int, source: Path, segments) -> bool:
+    def _write(self, index: int, source: Path, segments) -> str:
         if not segments:
             self._emit("error", index=index, message="No speech was detected in this file.")
-            return False
+            return "error"
         try:
             outputs = write_outputs(
                 segments, source, self._settings.formats, self._settings.resolved_output_dir()
             )
         except WriteError as exc:
             self._emit("error", index=index, message=str(exc))
-            return False
+            return "error"
         self._emit("done", index=index, fraction=1.0, outputs=tuple(outputs))
-        return True
+        return "done"

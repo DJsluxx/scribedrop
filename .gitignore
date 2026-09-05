@@ -16,7 +16,14 @@ env/
 # Build artefacts
 build/
 dist/
+# PyInstaller regenerates the spec on every run of build_exe.bat.
+*.spec
 *.spec.bak
+
+# Model weights - hundreds of megabytes, never in git.
+# The app stores them in %LOCALAPPDATA%\ScribeDrop\models, but Settings.models_dir
+# is user-settable and a contributor could point it here.
+models/
 
 # Generated launcher (created by setup.bat on the user's machine)
 ScribeDrop.bat

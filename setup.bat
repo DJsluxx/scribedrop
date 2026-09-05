@@ -83,7 +83,8 @@ echo   Double-click ScribeDrop.bat to start.
 echo ============================================
 echo.
 echo Note: the speech model downloads the first time you press Transcribe.
-echo After that, ScribeDrop works with no internet connection at all.
+echo After that it is served from a local cache, and ScribeDrop makes no
+echo network connection at all - you can unplug the cable and it still works.
 echo.
 pause
 exit /b 0

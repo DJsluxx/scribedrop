@@ -149,7 +149,7 @@ class Transcriber:
             choice = self._ladder[rung]
             on_progress(0.0, f"Loading model '{model_key}' on {choice.label}...")
             try:
-                self._model = self._build_model(model_key, choice)
+                self._model = self._build_model(model_key, choice, on_progress)
             except Exception as exc:  # noqa: BLE001 - classified immediately below
                 errors.append(f"{choice.label}: {exc}")
                 if looks_like_device_failure(exc):
@@ -161,15 +161,34 @@ class Transcriber:
             return choice
         raise EngineError("No usable device for this model. Tried:\n  " + "\n  ".join(errors))
 
-    def _build_model(self, model_key: str, choice: DeviceChoice):
+    def _build_model(self, model_key: str, choice: DeviceChoice, on_progress: ProgressFn):
+        """Load a model, preferring the on-disk cache so no socket is opened.
+
+        An already-downloaded model is opened with ``local_files_only=True``.
+        That matters for more than speed: without it, huggingface_hub asks
+        huggingface.co whether the model has changed on *every* single run,
+        so an app advertised as working offline would quietly reach out to
+        the internet forever. With it, the second and every later run opens
+        no network connection at all.
+
+        If the model is not cached yet we fall back to a normal load, which
+        downloads it. A device failure is re-raised untouched so the device
+        ladder - not the network - gets to handle it.
+        """
         from faster_whisper import WhisperModel
 
-        return WhisperModel(
-            model_key,
-            device=choice.device,
-            compute_type=choice.compute_type,
-            download_root=str(self._models_dir),
-        )
+        options = {
+            "device": choice.device,
+            "compute_type": choice.compute_type,
+            "download_root": str(self._models_dir),
+        }
+        try:
+            return WhisperModel(model_key, local_files_only=True, **options)
+        except Exception as exc:  # noqa: BLE001 - "not cached" is the expected case
+            if looks_like_device_failure(exc):
+                raise
+        on_progress(0.0, f"Downloading model '{model_key}' - this happens once...")
+        return WhisperModel(model_key, **options)
 
     def _demote(self, model_key: str, on_progress: ProgressFn) -> bool:
         """Step down one rung after a runtime device failure. False if none left."""
