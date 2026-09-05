@@ -1,0 +1,671 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ScribeDrop — Free Whisper GUI for Windows (Offline Speech to Text)</title>
+<meta name="description" content="Free, open-source Whisper GUI for Windows. Drag in a file, get a transcript or SRT subtitles back — computed offline on your own PC. No upload, no subscription.">
+<link rel="canonical" href="https://djsluxx.github.io/scribedrop/">
+
+<meta property="og:type" content="website">
+<meta property="og:title" content="ScribeDrop — Free Whisper GUI for Windows">
+<meta property="og:description" content="Drag a video or audio file onto a window. Get a transcript or SRT subtitles back, computed on your own PC. No upload, no account, no subscription, no command line.">
+<meta property="og:image" content="https://djsluxx.github.io/scribedrop/screenshot.png">
+<meta property="og:url" content="https://djsluxx.github.io/scribedrop/">
+
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="ScribeDrop — Free Whisper GUI for Windows">
+<meta name="twitter:description" content="Drag a video or audio file onto a window. Get a transcript or SRT subtitles back, computed on your own PC. No upload, no account, no subscription, no command line.">
+<meta name="twitter:image" content="https://djsluxx.github.io/scribedrop/screenshot.png">
+
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "SoftwareApplication",
+  "name": "ScribeDrop",
+  "description": "A free, open-source Whisper GUI for Windows. Drag an audio or video file onto a window and get a transcript or SRT/VTT subtitles back, computed entirely on your own PC after a one-time model download.",
+  "applicationCategory": "MultimediaApplication",
+  "operatingSystem": "Windows",
+  "softwareVersion": "0.1.0",
+  "url": "https://djsluxx.github.io/scribedrop/",
+  "downloadUrl": "https://github.com/DJsluxx/scribedrop/releases/latest",
+  "image": "https://djsluxx.github.io/scribedrop/screenshot.png",
+  "license": "https://opensource.org/licenses/MIT",
+  "offers": {
+    "@type": "Offer",
+    "price": "0",
+    "priceCurrency": "USD"
+  }
+}
+</script>
+
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  "mainEntity": [
+    {
+      "@type": "Question",
+      "name": "Is it really free?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Yes. ScribeDrop is free and open source under the MIT license. There's no price, no Pro tier live today, no waitlist, and no email capture — this page is the whole product. A paid Pro tier with features like watch-folders is planned for the future, but everything in the current release stays free."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "Does anything get uploaded?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "No. Transcription runs entirely on your own CPU or GPU. The only network activity is a one-time model download from Hugging Face the first time you use a given model size — that download carries no audio, filenames, or information about you. After that, ScribeDrop works with your network cable unplugged."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "Do I need a GPU?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "No. ScribeDrop runs on CPU out of the box using the standalone download, and the status line always tells you whether it's using CPU or GPU. If you have an NVIDIA GPU (driver 525+, 4 GB VRAM for the small model), the from-source install path uses it and transcribes substantially faster."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "Why does Windows warn me?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Because the .exe isn't code-signed — a signing certificate costs a few hundred dollars a year, and this is a free project. Windows SmartScreen will show 'Windows protected your PC' the first time you run it; click More info, then Run anyway. Your antivirus may also flag it, which is a known false positive common to PyInstaller-packaged Python apps. You don't have to take our word for it: check the SHA-256 checksum in the release notes, scan the file on VirusTotal, or skip the binary and run from source."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "What file types does it support?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Audio: mp3, wav, m4a, aac, flac, ogg, oga, opus, wma, aiff. Video: mp4, mkv, mov, avi, webm, m4v, wmv, flv, mpg, mpeg, ts — the audio track is used. Output is .txt, .srt, and/or .vtt, in any combination."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "What languages does it support?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Auto-detect, or pick one of 28 languages explicitly: English, Spanish, French, German, Italian, Portuguese, Dutch, Polish, Russian, Ukrainian, Turkish, Arabic, Hebrew, Hindi, Chinese, Japanese, Korean, Swedish, Norwegian, Danish, Finnish, Czech, Greek, Romanian, Hungarian, Indonesian, Vietnamese, and Thai."
+      }
+    }
+  ]
+}
+</script>
+
+<style>
+  :root{
+    --bg: #faf9f6;
+    --bg-raised: #ffffff;
+    --text: #1c1a17;
+    --text-dim: #57534e;
+    --border: #e2ded6;
+    --accent: #b5470d;
+    --accent-text: #ffffff;
+    --code-bg: #f1ede4;
+    --radius: 6px;
+    --space-1: 8px;
+    --space-2: 16px;
+    --space-3: 24px;
+    --space-4: 32px;
+    --space-5: 48px;
+    --space-6: 64px;
+    --space-7: 96px;
+  }
+  @media (prefers-color-scheme: dark){
+    :root{
+      --bg: #17140f;
+      --bg-raised: #201c16;
+      --text: #f1ede4;
+      --text-dim: #b9b2a4;
+      --border: #3a352b;
+      --accent: #e8863f;
+      --accent-text: #17140f;
+      --code-bg: #14110d;
+    }
+  }
+  *{ box-sizing: border-box; }
+  html{ -webkit-text-size-adjust: 100%; }
+  body{
+    margin: 0;
+    background: var(--bg);
+    color: var(--text);
+    font-family: -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    line-height: 1.6;
+    overflow-x: hidden;
+  }
+  a{ color: var(--accent); }
+  img{ max-width: 100%; height: auto; display: block; }
+  code, pre, .mono{
+    font-family: "Cascadia Mono", Consolas, "SFMono-Regular", Menlo, monospace;
+  }
+  .wrap{
+    max-width: 960px;
+    margin: 0 auto;
+    padding: 0 var(--space-3);
+  }
+
+  /* Nav */
+  header.site{
+    border-bottom: 1px solid var(--border);
+  }
+  .nav{
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: var(--space-3) 0;
+    flex-wrap: wrap;
+    gap: var(--space-2);
+  }
+  .wordmark{
+    font-weight: 700;
+    font-size: 1.1rem;
+    text-decoration: none;
+    color: var(--text);
+  }
+  .wordmark .dot{ color: var(--accent); }
+  .nav-links{
+    display: flex;
+    gap: var(--space-3);
+    font-size: 0.95rem;
+  }
+  .nav-links a{ color: var(--text-dim); text-decoration: none; }
+  .nav-links a:hover{ color: var(--accent); }
+
+  /* Hero */
+  .hero{
+    padding: var(--space-6) 0 var(--space-5);
+    display: flex;
+    gap: var(--space-6);
+    align-items: center;
+    flex-wrap: wrap;
+  }
+  .hero-copy{ flex: 1 1 380px; }
+  .hero-shot{ flex: 1 1 380px; }
+  .kicker{
+    display: inline-block;
+    font-size: 0.8rem;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: var(--accent);
+    font-weight: 600;
+    margin-bottom: var(--space-2);
+  }
+  h1{
+    font-size: clamp(1.9rem, 4vw, 2.7rem);
+    line-height: 1.15;
+    margin: 0 0 var(--space-2);
+  }
+  .lede{
+    font-size: 1.15rem;
+    color: var(--text-dim);
+    margin: 0 0 var(--space-3);
+    max-width: 52ch;
+  }
+  .cta-row{
+    display: flex;
+    gap: var(--space-2);
+    flex-wrap: wrap;
+    margin-bottom: var(--space-2);
+  }
+  .btn{
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 12px 20px;
+    border-radius: var(--radius);
+    text-decoration: none;
+    font-weight: 600;
+    font-size: 0.98rem;
+    border: 1px solid transparent;
+  }
+  .btn-primary{
+    background: var(--accent);
+    color: var(--accent-text);
+  }
+  .btn-secondary{
+    background: transparent;
+    color: var(--text);
+    border-color: var(--border);
+  }
+  .btn svg{ width: 18px; height: 18px; flex: none; }
+  .fine-print{
+    font-size: 0.85rem;
+    color: var(--text-dim);
+    margin: 0;
+  }
+  .hero-shot img{
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    box-shadow: 0 8px 24px rgba(0,0,0,0.12);
+  }
+  .hero-shot figcaption{
+    font-size: 0.82rem;
+    color: var(--text-dim);
+    margin-top: var(--space-1);
+  }
+
+  /* Sections */
+  section{ padding: var(--space-6) 0; border-top: 1px solid var(--border); }
+  section.tight{ padding: var(--space-5) 0; }
+  h2{
+    font-size: 1.6rem;
+    margin: 0 0 var(--space-3);
+  }
+  h3{
+    font-size: 1.15rem;
+    margin: var(--space-4) 0 var(--space-2);
+  }
+  p{ margin: 0 0 var(--space-2); }
+  .col-2{
+    display: flex;
+    gap: var(--space-5);
+    flex-wrap: wrap;
+  }
+  .col-2 > div{ flex: 1 1 320px; }
+
+  ul.feature-list{
+    list-style: none;
+    margin: 0;
+    padding: 0;
+  }
+  ul.feature-list li{
+    padding: var(--space-2) 0;
+    border-bottom: 1px solid var(--border);
+  }
+  ul.feature-list li:first-child{ padding-top: 0; }
+  ul.feature-list li:last-child{ border-bottom: none; }
+  ul.feature-list strong{ color: var(--text); }
+
+  table{
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.95rem;
+  }
+  .table-scroll{ overflow-x: auto; }
+  th, td{
+    text-align: left;
+    padding: 10px 12px;
+    border-bottom: 1px solid var(--border);
+    vertical-align: top;
+  }
+  th{ color: var(--text-dim); font-weight: 600; font-size: 0.85rem; text-transform: uppercase; letter-spacing: 0.02em; }
+
+  pre{
+    background: var(--code-bg);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: var(--space-2);
+    overflow-x: auto;
+    font-size: 0.88rem;
+    line-height: 1.5;
+  }
+  code.inline{
+    background: var(--code-bg);
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-size: 0.9em;
+  }
+
+  .limits-box{
+    background: var(--bg-raised);
+    border: 1px solid var(--border);
+    border-left: 4px solid var(--accent);
+    border-radius: var(--radius);
+    padding: var(--space-3) var(--space-4);
+  }
+  .limits-box ul{ margin: var(--space-2) 0 0; padding-left: 1.2em; }
+  .limits-box li{ margin-bottom: var(--space-1); }
+
+  .faq-item{ margin-bottom: var(--space-4); }
+  .faq-item h3{ margin-top: 0; margin-bottom: var(--space-1); font-size: 1.05rem; }
+  .faq-item p{ color: var(--text-dim); margin: 0; }
+
+  ol{ padding-left: 1.3em; }
+  ol li{ margin-bottom: var(--space-1); }
+
+  footer{
+    border-top: 1px solid var(--border);
+    padding: var(--space-5) 0 var(--space-6);
+    color: var(--text-dim);
+    font-size: 0.9rem;
+  }
+  footer a{ color: var(--text-dim); }
+  footer a:hover{ color: var(--accent); }
+  .footer-links{
+    display: flex;
+    gap: var(--space-3);
+    flex-wrap: wrap;
+    margin-bottom: var(--space-2);
+  }
+
+  @media (max-width: 640px){
+    .hero{ padding-top: var(--space-5); }
+    section{ padding: var(--space-5) 0; }
+  }
+</style>
+</head>
+<body>
+
+<header class="site">
+  <div class="wrap nav">
+    <a class="wordmark" href="#top">Scribe<span class="dot">Drop</span></a>
+    <nav class="nav-links">
+      <a href="#install">Download</a>
+      <a href="#limits">Limits</a>
+      <a href="#faq">FAQ</a>
+      <a href="https://github.com/DJsluxx/scribedrop">Source on GitHub</a>
+    </nav>
+  </div>
+</header>
+
+<main id="top">
+
+  <div class="wrap hero">
+    <div class="hero-copy">
+      <span class="kicker">Free &middot; Open source &middot; Windows</span>
+      <h1>A free Whisper GUI for Windows, for when the command line isn't the point</h1>
+      <p class="lede">Drag an audio or video file onto a window. Get a transcript or SRT/VTT
+      subtitles back, computed entirely on your own PC. No upload, no account, no subscription,
+      no command line.</p>
+      <div class="cta-row">
+        <a class="btn btn-primary" href="https://github.com/DJsluxx/scribedrop/releases/latest">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12"/><path d="M7 10l5 5 5-5"/><path d="M5 21h14"/></svg>
+          Download for Windows
+        </a>
+        <a class="btn btn-secondary" href="https://github.com/DJsluxx/scribedrop">
+          <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 .5C5.73.5.9 5.34.9 11.6c0 5 3.24 9.24 7.74 10.74.57.1.78-.25.78-.55 0-.27-.01-1.16-.02-2.11-3.15.69-3.81-1.34-3.81-1.34-.52-1.31-1.26-1.66-1.26-1.66-1.03-.7.08-.69.08-.69 1.14.08 1.74 1.17 1.74 1.17 1.01 1.74 2.65 1.24 3.3.95.1-.74.4-1.24.72-1.53-2.51-.29-5.15-1.26-5.15-5.6 0-1.24.44-2.25 1.17-3.04-.12-.29-.51-1.46.11-3.04 0 0 .96-.31 3.14 1.16a10.9 10.9 0 0 1 5.72 0c2.18-1.47 3.14-1.16 3.14-1.16.62 1.58.23 2.75.11 3.04.73.79 1.17 1.8 1.17 3.04 0 4.35-2.65 5.31-5.17 5.59.41.35.77 1.04.77 2.1 0 1.52-.01 2.74-.01 3.11 0 .3.2.66.79.55A11.1 11.1 0 0 0 23.1 11.6C23.1 5.34 18.27.5 12 .5z"/></svg>
+          View source on GitHub
+        </a>
+      </div>
+      <p class="fine-print">Latest release: <code class="inline">ScribeDrop-0.1.0-win64-cpu.zip</code>,
+      about 100&nbsp;MB, no install required. Prefer to skip the binary?
+      <a href="https://github.com/DJsluxx/scribedrop">Clone the source</a> instead — see
+      <a href="#install">Install</a> below.</p>
+    </div>
+    <figure class="hero-shot">
+      <img src="screenshot.png" alt="ScribeDrop window showing a queue of two finished transcription jobs on an RTX 4070 Ti, with per-file progress and output format checkboxes.">
+      <figcaption>ScribeDrop after transcribing two files, on an RTX 4070 Ti.</figcaption>
+    </figure>
+  </div>
+
+  <section id="why">
+    <div class="wrap">
+      <h2>MacWhisper for Windows? This is why we built it</h2>
+      <p>If you've searched for a <strong>MacWhisper alternative for Windows</strong> and come away
+      empty-handed, that gap is the reason ScribeDrop exists. Mac users get one window: drag a file
+      in, get a subtitle file out. Windows users get handed a command line.</p>
+      <p>The engine almost everyone actually uses — <a href="https://github.com/SYSTRAN/faster-whisper">faster-whisper</a>,
+      a CTranslate2 port of OpenAI's Whisper — is free, open source, and downloaded millions of
+      times a month. But running it on Windows has usually meant setting up a Python environment,
+      hunting down CUDA libraries, and typing <code class="inline">--model large-v3 --output_format srt</code>
+      at a prompt.</p>
+      <p>So people either pay a cloud service per minute of audio, or pay for a closed-source
+      Windows clone of a Mac app, for something their own computer can already do for nothing.
+      ScribeDrop is the missing front end: the same engine, wrapped in a window — a free Whisper
+      GUI for Windows that turns "transcribe this" into a drag and a click.</p>
+    </div>
+  </section>
+
+  <section id="what">
+    <div class="wrap">
+      <h2>What it does</h2>
+      <ul class="feature-list">
+        <li><strong>Drag and drop</strong> files or whole folders onto the window — or use
+        <em>Add files&hellip;</em>, or drop files onto the launcher itself.</li>
+        <li><strong>A real queue</strong>, with per-file progress, an overall progress bar, and a
+        Cancel button that actually stops mid-file instead of finishing anyway.</li>
+        <li><strong>A model picker</strong> — tiny, base, small, medium, or large-v3 — with the
+        download size for each shown up front. Defaults to <code class="inline">small</code>,
+        a much smaller download than <code class="inline">large-v3</code> and good enough for
+        most speech.</li>
+        <li><strong>28 languages</strong>, or auto-detect: English, Spanish, French, German,
+        Italian, Portuguese, Dutch, Polish, Russian, Ukrainian, Turkish, Arabic, Hebrew, Hindi,
+        Chinese, Japanese, Korean, Swedish, Norwegian, Danish, Finnish, Czech, Greek, Romanian,
+        Hungarian, Indonesian, Vietnamese, and Thai.</li>
+        <li><strong>Three output formats</strong> — <code class="inline">.txt</code>,
+        <code class="inline">.srt</code>, <code class="inline">.vtt</code> — in any combination,
+        written next to the source file or into a folder you choose.</li>
+        <li><strong>GPU when you have one, CPU when you don't</strong> — the status line always
+        says which, e.g. <code class="inline">Using GPU (CUDA) / float16</code> or
+        <code class="inline">Using CPU / int8</code>. It never silently falls back to the slow path
+        without telling you.</li>
+        <li><strong>Nothing gets overwritten.</strong> Run it twice on the same file and the second
+        pass writes <code class="inline">interview (1).srt</code>, not over your first result.</li>
+      </ul>
+
+      <h3>Generate SRT subtitles locally</h3>
+      <p>If subtitles are what you came for: tick <strong>Subtitles (.srt)</strong>, drop the video
+      in, press Transcribe. You get a standards-shaped <code class="inline">.srt</code> file next to
+      the video, with sequential indices and monotonic timestamps, ready for YouTube, Premiere,
+      DaVinci Resolve, VLC, or anything else that reads subtitle files. <code class="inline">.vtt</code>
+      for the web works the same way, and both can be written from a single run — no upload to a
+      subtitle-as-a-service site required.</p>
+      <p>Here is a real <code class="inline">.srt</code> file ScribeDrop wrote, unedited:</p>
+      <pre><code>1
+00:00:00,000 --&gt; 00:00:02,600
+Thanks for trying scribe drop.
+
+2
+00:00:02,600 --&gt; 00:00:11,140
+Drop a video or audio file onto this window, and it writes a subtitle file next to it, using your own computer to do the work.
+
+3
+00:00:11,140 --&gt; 00:00:15,060
+No upload, no account, and no subscription required.</code></pre>
+
+      <h3>Which model should I pick?</h3>
+      <div class="table-scroll">
+        <table>
+          <thead><tr><th>Model</th><th>What it's for</th></tr></thead>
+          <tbody>
+            <tr><td>tiny</td><td>Fastest, smallest download. Good for a rough draft you'll skim, not trust.</td></tr>
+            <tr><td>base</td><td>Still quick, a step up in accuracy. Fine for casual notes.</td></tr>
+            <tr><td>small <span class="fine-print">(default)</span></td><td>The everyday pick — good accuracy for a download most people won't notice.</td></tr>
+            <tr><td>medium</td><td>Slower and a bigger download, worth it for accents, background noise, or a talk you'll publish.</td></tr>
+            <tr><td>large-v3</td><td>The most accurate, the slowest, and the biggest download — pick it when the transcript itself is the deliverable and you have a decent GPU.</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <section id="privacy">
+    <div class="wrap">
+      <h2>Your audio never leaves your machine</h2>
+      <p>This is what <strong>offline speech to text on Windows</strong> actually means here:
+      transcription runs entirely on your own CPU or GPU. No upload, no account, no server, no
+      telemetry — ScribeDrop has no analytics, no crash reporting, and no update check.</p>
+      <p><strong>One exception, stated plainly:</strong> the first time you use a given model size,
+      ScribeDrop downloads the model weights from Hugging Face. That's a normal file download and it
+      sends no audio, no filenames, and no information about you. After that download, ScribeDrop
+      works with your network cable unplugged, and it does not contact the internet again.</p>
+      <p>That last sentence is load-bearing, so it's enforced in code rather than hoped for: once a
+      model is on disk it is opened with <code class="inline">local_files_only=True</code>, which
+      stops <code class="inline">huggingface_hub</code> from making its routine "has this changed?"
+      call on every launch. The verification for the release build used a local HTTP server standing
+      in for huggingface.co — a cached run sent it zero requests. The code is short enough to check
+      yourself; start at
+      <a href="https://github.com/DJsluxx/scribedrop/blob/main/scribedrop/engine.py">scribedrop/engine.py</a>.</p>
+    </div>
+  </section>
+
+  <section id="limits">
+    <div class="wrap">
+      <h2>Honest limits — read this before you download</h2>
+      <p>This is a trust page, not a hype page, so here is the plain shape of what you're getting
+      with v0.1.0.</p>
+      <div class="limits-box">
+        <p><strong>Windows only.</strong> Built and tested for Windows 10/11, 64-bit. There's no
+        macOS or Linux build.</p>
+        <p><strong>The .exe isn't code-signed.</strong> Windows SmartScreen will show
+        <em>"Windows protected your PC"</em> the first time you run it — click <strong>More
+        info &rarr; Run anyway</strong>. Your antivirus may flag it too, which is a known false
+        positive affecting almost every PyInstaller-packaged Python app. Don't take our word for
+        it: check the SHA-256 checksum against the one published in the release notes, scan the
+        file on <a href="https://www.virustotal.com">VirusTotal</a>, or skip the binary entirely
+        and run from source — that's the whole point of publishing it.</p>
+        <p><strong>A one-time model download is required on first run.</strong> After that,
+        ScribeDrop works fully offline; see <a href="#privacy">above</a> for how that's enforced,
+        not just promised.</p>
+        <p><strong>This is v0.1.0.</strong> It's tested (150 automated tests) but young. Specific
+        known limits in this release:</p>
+        <ul>
+          <li>No live or microphone recording — files only.</li>
+          <li>No speaker diarisation ("who said what").</li>
+          <li>No subtitle line-length or characters-per-second shaping; segments come out exactly
+          as Whisper produces them.</li>
+          <li>No in-app editor for fixing a transcript.</li>
+          <li><code class="inline">.srt</code> files use LF line endings. Every player we tried
+          accepts them; a few legacy subtitle editors prefer CRLF.</li>
+          <li>The standalone bundle is CPU-only by design; the GPU path currently requires the
+          from-source install.</li>
+        </ul>
+        <p>It also produces machine transcription, and like all Whisper-based tools it can
+        occasionally generate fluent text that was never spoken, especially on silence, music, or
+        poor audio. Always check the transcript against the audio before relying on it — don't use
+        ScribeDrop as the sole record for medical, legal, financial, safety-critical, or evidentiary
+        purposes.</p>
+      </div>
+    </div>
+  </section>
+
+  <section id="install">
+    <div class="wrap">
+      <h2>Install</h2>
+      <p>Two paths. If you have an NVIDIA GPU, Option B transcribes substantially faster — but
+      Option A is the simplest way to try it.</p>
+      <div class="col-2">
+        <div>
+          <h3>Option A — Standalone (CPU only, no Python)</h3>
+          <ol>
+            <li>Download <code class="inline">ScribeDrop-0.1.0-win64-cpu.zip</code> from
+            <a href="https://github.com/DJsluxx/scribedrop/releases/latest">Releases</a> (about 100&nbsp;MB).</li>
+            <li>Unzip it anywhere.</li>
+            <li>Run <code class="inline">ScribeDrop.exe</code>.</li>
+          </ol>
+          <p class="fine-print">Measured on the release machine (AMD Ryzen 7 7800X3D, CPU-only
+          path), a 5-minute audio file with the default <code class="inline">small</code> model
+          took 19.0 seconds. One machine, not a broad benchmark — your results will vary.</p>
+        </div>
+        <div>
+          <h3>Option B — From source (uses your NVIDIA GPU)</h3>
+          <p>Requires <a href="https://www.python.org/downloads/">Python 3.10+</a> with
+          <em>Add python.exe to PATH</em> ticked.</p>
+          <ol>
+            <li>Download <code class="inline">ScribeDrop-0.1.0-source.zip</code> from Releases, or
+            <code class="inline">git clone</code> the repo.</li>
+            <li>Double-click <code class="inline">setup.bat</code>. It creates a private
+            <code class="inline">.venv</code>, installs requirements, detects an NVIDIA GPU, and
+            installs CUDA libraries automatically if one is found (a large one-time download).</li>
+            <li>Double-click <code class="inline">ScribeDrop.bat</code>.</li>
+          </ol>
+          <p class="fine-print">Measured on the release machine (NVIDIA RTX 4070 Ti, GPU path),
+          the same 5-minute file with the same <code class="inline">small</code> model took
+          4.5 seconds. Same input, same model, only the device changed.</p>
+        </div>
+      </div>
+      <p>Everything ScribeDrop creates for itself lives in the project folder or in
+      <code class="inline">%LOCALAPPDATA%\ScribeDrop</code> (settings and downloaded models).
+      Transcripts go next to your source file by default, or wherever you point the output folder.</p>
+
+      <h3>System requirements</h3>
+      <div class="table-scroll">
+        <table>
+          <thead><tr><th></th><th>Minimum</th><th>For the GPU path</th></tr></thead>
+          <tbody>
+            <tr><td>OS</td><td>Windows 10 / 11, 64-bit</td><td>same</td></tr>
+            <tr><td>RAM</td><td>4 GB (small model)</td><td>8 GB</td></tr>
+            <tr><td>Disk</td><td>~1 GB for the app + small model</td><td>~2.5 GB (CUDA libraries)</td></tr>
+            <tr><td>GPU</td><td>None — CPU works</td><td>NVIDIA, driver 525+, 4 GB VRAM for small, 8 GB+ for large-v3</td></tr>
+            <tr><td>Python</td><td>Not needed (Option A)</td><td>3.10+ (Option B)</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p class="fine-print">Approximate, measured casually rather than benchmarked. FFmpeg is
+      optional — ScribeDrop decodes audio through PyAV, which carries its own FFmpeg libraries, so
+      most files just work. A separately installed FFmpeg is used only as a fallback for unusual
+      containers.</p>
+    </div>
+  </section>
+
+  <section id="faq">
+    <div class="wrap">
+      <h2>Frequently asked questions</h2>
+
+      <div class="faq-item">
+        <h3>Is it really free?</h3>
+        <p>Yes. ScribeDrop is free and open source under the MIT license. There's no price, no
+        Pro tier live today, no waitlist, and no email capture — this page is the whole product.
+        A paid Pro tier with features like watch-folders is planned for the future, but everything
+        in the current release stays free.</p>
+      </div>
+
+      <div class="faq-item">
+        <h3>Does anything get uploaded?</h3>
+        <p>No. Transcription runs entirely on your own CPU or GPU. The only network activity is a
+        one-time model download from Hugging Face the first time you use a given model size — that
+        download carries no audio, filenames, or information about you. After that, ScribeDrop
+        works with your network cable unplugged.</p>
+      </div>
+
+      <div class="faq-item">
+        <h3>Do I need a GPU?</h3>
+        <p>No. ScribeDrop runs on CPU out of the box using the standalone download, and the status
+        line always tells you whether it's using CPU or GPU. If you have an NVIDIA GPU (driver
+        525+, 4 GB VRAM for the small model), the from-source install path uses it and transcribes
+        substantially faster.</p>
+      </div>
+
+      <div class="faq-item">
+        <h3>Why does Windows warn me?</h3>
+        <p>Because the .exe isn't code-signed — a signing certificate costs a few hundred dollars a
+        year, and this is a free project. Windows SmartScreen will show "Windows protected your PC"
+        the first time you run it; click More info, then Run anyway. Your antivirus may also flag
+        it, which is a known false positive common to PyInstaller-packaged Python apps. You don't
+        have to take our word for it: check the SHA-256 checksum in the release notes, scan the
+        file on VirusTotal, or skip the binary and run from source.</p>
+      </div>
+
+      <div class="faq-item">
+        <h3>What file types does it support?</h3>
+        <p>Audio: mp3, wav, m4a, aac, flac, ogg, oga, opus, wma, aiff. Video: mp4, mkv, mov, avi,
+        webm, m4v, wmv, flv, mpg, mpeg, ts — the audio track is used. Output is .txt, .srt, and/or
+        .vtt, in any combination.</p>
+      </div>
+
+      <div class="faq-item">
+        <h3>What languages does it support?</h3>
+        <p>Auto-detect, or pick one of 28 languages explicitly: English, Spanish, French, German,
+        Italian, Portuguese, Dutch, Polish, Russian, Ukrainian, Turkish, Arabic, Hebrew, Hindi,
+        Chinese, Japanese, Korean, Swedish, Norwegian, Danish, Finnish, Czech, Greek, Romanian,
+        Hungarian, Indonesian, Vietnamese, and Thai.</p>
+      </div>
+    </div>
+  </section>
+
+</main>
+
+<footer>
+  <div class="wrap">
+    <div class="footer-links">
+      <a href="https://github.com/DJsluxx/scribedrop">Repository</a>
+      <a href="https://github.com/DJsluxx/scribedrop/releases/latest">Releases</a>
+      <a href="https://github.com/DJsluxx/scribedrop/blob/main/LICENSE">MIT License</a>
+      <a href="https://github.com/DJsluxx/scribedrop/blob/main/THIRD-PARTY-NOTICES.md">Third-party notices</a>
+      <a href="https://github.com/DJsluxx/scribedrop/issues">Report an issue</a>
+    </div>
+    <p>ScribeDrop is MIT licensed and stands on other open-source work: OpenAI's Whisper models,
+    SYSTRAN's faster-whisper and CTranslate2, Silero VAD, tkinterdnd2, and PyAV — full credits and
+    licenses are in the repository.</p>
+    <p>Written with substantial help from AI coding tools; every line was reviewed and tested by a
+    human before release. Treat it the way you'd treat any small open-source project from an
+    unfamiliar author: the source is right here, and you're welcome to read it before you run it.</p>
+  </div>
+</footer>
+
+</body>
+</html>
