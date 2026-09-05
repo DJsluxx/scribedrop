@@ -1,0 +1,6 @@
+# Optional NVIDIA runtime libraries (~1.2 GB).
+# CTranslate2 needs cublas64_12.dll and cudnn*_9.dll at runtime; these wheels
+# supply them, and scribedrop/cuda_paths.py puts them on the DLL search path.
+# setup.bat installs these automatically when it detects an NVIDIA GPU.
+nvidia-cublas-cu12
+nvidia-cudnn-cu12>=9,<10

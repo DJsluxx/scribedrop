@@ -1,0 +1,31 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+.venv/
+venv/
+env/
+
+# Secrets - never committed. ScribeDrop needs none, and this keeps it that way.
+.env
+.env.*
+*.key
+*.pem
+
+# Build artefacts
+build/
+dist/
+*.spec.bak
+
+# Generated launcher (created by setup.bat on the user's machine)
+ScribeDrop.bat
+
+# Local media and transcripts
+*.wav
+*.mp3
+*.mp4
+*.mkv
+*.srt
+*.vtt
+!docs/**/*.png

@@ -1,0 +1,3 @@
+# Core runtime. CPU-only by default - see requirements-gpu.txt for NVIDIA.
+faster-whisper>=1.1,<2
+tkinterdnd2>=0.4,<1
